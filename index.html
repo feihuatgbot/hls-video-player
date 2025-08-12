@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS视频播放器</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+        }
+        #video-container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        video {
+            width: 100%;
+            background-color: black;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <video id="video" controls></video>
+        <button id="playButton">播放视频</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var video = document.getElementById('video');
+            var playButton = document.getElementById('playButton');
+            var encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
+
+            if (!encodedVideoSrc) {
+                return;
+            }
+
+            var videoSrc = atob(encodedVideoSrc);
+
+            if (Hls.isSupported()) {
+                var hls = new Hls();
+                hls.loadSource(videoSrc);
+                hls.attachMedia(video);
+
+                playButton.addEventListener('click', function() {
+                    video.play();
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = videoSrc;
+
+                playButton.addEventListener('click', function() {
+                    video.play();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
