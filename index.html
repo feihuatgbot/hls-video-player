@@ -17,14 +17,12 @@
         }
         #video-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 100%;
             text-align: center;
         }
         video {
             width: 100%;
-            height: auto;
             background-color: black;
-            object-fit: contain; /* 让竖屏视频不被裁切 */
         }
         button {
             padding: 10px 20px;
@@ -34,22 +32,43 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
+            margin-top: 10px;
+        }
+
+        /* 横屏样式 */
+        @media screen and (orientation: landscape) {
+            #video-container {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+
+        /* 竖屏样式 */
+        @media screen and (orientation: portrait) {
+            #video-container {
+                max-width: 100%;
+                height: auto;
+            }
         }
     </style>
 </head>
 <body>
     <div id="video-container">
-        <video id="video" playsinline webkit-playsinline controls></video>
+        <video id="video" controls></video>
         <button id="playButton">播放视频</button>
+        <button id="fullscreenButton">全屏播放</button>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var video = document.getElementById('video');
             var playButton = document.getElementById('playButton');
+            var fullscreenButton = document.getElementById('fullscreenButton');
             var encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
 
-            if (!encodedVideoSrc) return;
+            if (!encodedVideoSrc) {
+                return;
+            }
 
             var videoSrc = atob(encodedVideoSrc);
 
@@ -57,12 +76,26 @@
                 var hls = new Hls();
                 hls.loadSource(videoSrc);
                 hls.attachMedia(video);
+
+                playButton.addEventListener('click', function() {
+                    video.play();
+                });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = videoSrc;
+
+                playButton.addEventListener('click', function() {
+                    video.play();
+                });
             }
 
-            playButton.addEventListener('click', function() {
-                video.play();
+            fullscreenButton.addEventListener('click', function() {
+                if (video.requestFullscreen) {
+                    video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) { /* Safari */
+                    video.webkitRequestFullscreen();
+                } else if (video.msRequestFullscreen) { /* IE11 */
+                    video.msRequestFullscreen();
+                }
             });
         });
     </script>
