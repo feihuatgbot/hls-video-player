@@ -10,93 +10,61 @@
             margin: 0;
             padding: 0;
             height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             background-color: black;
-        }
-        #video-container {
-            width: 100%;
-            max-width: 100%;
-            text-align: center;
         }
         video {
             width: 100%;
+            height: 100%;
             background-color: black;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        /* 横屏样式 */
-        @media screen and (orientation: landscape) {
-            #video-container {
-                max-width: 100%;
-                height: auto;
-            }
-        }
-
-        /* 竖屏样式 */
-        @media screen and (orientation: portrait) {
-            #video-container {
-                max-width: 100%;
-                height: auto;
-            }
         }
     </style>
 </head>
 <body>
-    <div id="video-container">
-        <video id="video" controls></video>
-        <button id="playButton">播放视频</button>
-        <button id="fullscreenButton">全屏播放</button>
-    </div>
+    <video id="video" controls playsinline></video>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var video = document.getElementById('video');
-            var playButton = document.getElementById('playButton');
-            var fullscreenButton = document.getElementById('fullscreenButton');
             var encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
-
-            if (!encodedVideoSrc) {
-                return;
-            }
+            if (!encodedVideoSrc) return;
 
             var videoSrc = atob(encodedVideoSrc);
 
+            // 初始化 HLS
             if (Hls.isSupported()) {
                 var hls = new Hls();
                 hls.loadSource(videoSrc);
                 hls.attachMedia(video);
-
-                playButton.addEventListener('click', function() {
-                    video.play();
-                });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = videoSrc;
-
-                playButton.addEventListener('click', function() {
-                    video.play();
-                });
             }
 
-            fullscreenButton.addEventListener('click', function() {
+            // 尝试进入横屏和全屏
+            function enterFullscreenAndLandscape() {
                 if (video.requestFullscreen) {
                     video.requestFullscreen();
-                } else if (video.webkitRequestFullscreen) { /* Safari */
+                } else if (video.webkitRequestFullscreen) {
                     video.webkitRequestFullscreen();
-                } else if (video.msRequestFullscreen) { /* IE11 */
+                } else if (video.msRequestFullscreen) {
                     video.msRequestFullscreen();
                 }
+
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(err => {
+                        console.log("横屏锁定失败:", err);
+                    });
+                }
+
+                video.play();
+            }
+
+            // 有些浏览器需要用户交互才能全屏和横屏
+            video.addEventListener('loadedmetadata', function () {
+                enterFullscreenAndLandscape();
             });
+
+            // 如果浏览器限制，第一次点击视频也触发
+            video.addEventListener('click', enterFullscreenAndLandscape);
         });
     </script>
 </body>
