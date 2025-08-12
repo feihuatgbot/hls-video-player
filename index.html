@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>感谢关注并使用 @feihuatgbot 欢迎转发分享！</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
@@ -11,59 +11,46 @@
             padding: 0;
             height: 100%;
             background-color: black;
-            overflow: hidden;
-        }
-        #video-container {
-            width: 100%;
-            height: 100%;
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            background-color: black;
-        }
-        #overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.3);
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            background-color: black;
+        }
+        #message {
             color: white;
-            font-size: 24px;
-            z-index: 10;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
     </style>
 </head>
 <body>
-    <div id="video-container">
-        <video id="video" controls playsinline webkit-playsinline muted></video>
-    </div>
-    <div id="overlay">点击屏幕以播放声音</div>
+    <video id="video" controls playsinline webkit-playsinline muted></video>
+    <div id="message" style="display: none;">请点击屏幕以启用声音</div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const video = document.getElementById('video');
-            const overlay = document.getElementById('overlay');
-
-            // 从 URL 获取 vurl 参数（Base64 编码）
+            const message = document.getElementById('message');
             const encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
-            if (!encodedVideoSrc) return;
 
-            // Base64 解码
-            const videoSrc = atob(decodeURIComponent(encodedVideoSrc));
-
-            // 横屏锁定
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock("landscape").catch(err => console.log("横屏失败:", err));
+            if (!encodedVideoSrc) {
+                message.textContent = "未提供视频源";
+                message.style.display = 'block';
+                return;
             }
 
-            // 全屏播放
+            const videoSrc = atob(decodeURIComponent(encodedVideoSrc));
+
             const enterFullScreen = () => {
                 if (video.requestFullscreen) {
-                    video.requestFullscreen();
+                    video.requestFullscreen().catch(err => {
+                        console.log("全屏失败:", err);
+                    });
                 } else if (video.webkitRequestFullscreen) {
                     video.webkitRequestFullscreen();
                 } else if (video.msRequestFullscreen) {
@@ -75,10 +62,10 @@
                 enterFullScreen();
                 video.play().catch(err => {
                     console.log("自动播放失败，需要用户交互:", err);
+                    message.style.display = 'block';
                 });
             };
 
-            // 加载视频
             if (Hls.isSupported()) {
                 const hls = new Hls();
                 hls.loadSource(videoSrc);
@@ -91,15 +78,15 @@
                 video.addEventListener('loadedmetadata', () => {
                     startPlay();
                 });
+            } else {
+                message.textContent = "您的浏览器不支持HLS视频播放";
+                message.style.display = 'block';
             }
 
-            // 用户点击屏幕后取消静音并播放
             document.addEventListener('click', () => {
                 video.muted = false;
-                overlay.style.display = 'none';
-                video.play().catch(err => {
-                    console.log("播放失败:", err);
-                });
+                video.play();
+                message.style.display = 'none';
             }, { once: true });
         });
     </script>
