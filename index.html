@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hi User，感谢关注并使用 @feihuatgbot 欢迎转发分享！</title>
+    <title>感谢关注并使用 @feihuatgbot 欢迎转发分享！</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         body, html {
@@ -11,61 +11,49 @@
             padding: 0;
             height: 100%;
             background-color: black;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         video {
             width: 100%;
             height: 100%;
             background-color: black;
         }
-        #loading {
-            color: white;
-            font-size: 18px;
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            text-align: center;
-        }
     </style>
 </head>
 <body>
-    <div id="loading">正在加载视频...</div>
-    <video id="video" controls playsinline muted autoplay></video>
+    <video id="video" controls playsinline webkit-playsinline muted></video>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const video = document.getElementById('video');
-            const loading = document.getElementById('loading');
 
-            // 获取 vurl 参数
+            // 从 URL 获取 vurl 参数（Base64 编码）
             const encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
-            if (!encodedVideoSrc) {
-                loading.innerText = "视频地址缺失";
-                return;
-            }
+            if (!encodedVideoSrc) return;
 
-            let videoSrc;
-            try {
-                videoSrc = atob(decodeURIComponent(encodedVideoSrc));
-            } catch (err) {
-                loading.innerText = "视频地址解析失败";
-                return;
-            }
+            // Base64 解码
+            const videoSrc = atob(decodeURIComponent(encodedVideoSrc));
 
-            // 横屏尝试
+            // 横屏锁定
             if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock("landscape").catch(() => {
-                    console.log("横屏锁定失败，用户需手动旋转设备");
-                });
+                screen.orientation.lock("landscape").catch(err => console.log("横屏失败:", err));
             }
 
-            // 全屏方法
+            // 全屏播放
             const enterFullScreen = () => {
-                if (video.requestFullscreen) video.requestFullscreen();
-                else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
-                else if (video.msRequestFullscreen) video.msRequestFullscreen();
+                if (video.requestFullscreen) {
+                    video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) {
+                    video.webkitRequestFullscreen();
+                } else if (video.msRequestFullscreen) {
+                    video.msRequestFullscreen();
+                }
+            };
+
+            const startPlay = () => {
+                enterFullScreen();
+                video.play().catch(err => {
+                    console.log("自动播放失败，需要用户交互:", err);
+                });
             };
 
             // 加载视频
@@ -74,26 +62,20 @@
                 hls.loadSource(videoSrc);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    loading.style.display = "none";
-                    enterFullScreen();
-                    video.play().catch(err => console.log("自动播放失败:", err));
-                });
-                hls.on(Hls.Events.ERROR, () => {
-                    loading.innerText = "视频加载失败";
+                    startPlay();
                 });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = videoSrc;
                 video.addEventListener('loadedmetadata', () => {
-                    loading.style.display = "none";
-                    enterFullScreen();
-                    video.play().catch(err => console.log("自动播放失败:", err));
+                    startPlay();
                 });
-                video.addEventListener('error', () => {
-                    loading.innerText = "视频加载失败";
-                });
-            } else {
-                loading.innerText = "您的浏览器不支持 HLS 播放";
             }
+
+            // 安卓端可能需要点击一次才能有声音播放
+            document.addEventListener('click', () => {
+                video.muted = false;
+                video.play();
+            }, { once: true });
         });
     </script>
 </body>
