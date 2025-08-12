@@ -24,23 +24,22 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            var video = document.getElementById('video');
-            var encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
+            const video = document.getElementById('video');
+
+            // 从 URL 获取 vurl 参数（Base64 编码）
+            const encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
             if (!encodedVideoSrc) return;
 
-            var videoSrc = atob(encodedVideoSrc);
+            // Base64 解码
+            const videoSrc = atob(decodeURIComponent(encodedVideoSrc));
 
-            // 初始化 HLS
-            if (Hls.isSupported()) {
-                var hls = new Hls();
-                hls.loadSource(videoSrc);
-                hls.attachMedia(video);
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = videoSrc;
+            // 横屏锁定
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock("landscape").catch(err => console.log("横屏失败:", err));
             }
 
-            // 尝试进入横屏和全屏
-            function enterFullscreenAndLandscape() {
+            // 全屏播放
+            const enterFullScreen = () => {
                 if (video.requestFullscreen) {
                     video.requestFullscreen();
                 } else if (video.webkitRequestFullscreen) {
@@ -48,23 +47,24 @@
                 } else if (video.msRequestFullscreen) {
                     video.msRequestFullscreen();
                 }
+            };
 
-                if (screen.orientation && screen.orientation.lock) {
-                    screen.orientation.lock('landscape').catch(err => {
-                        console.log("横屏锁定失败:", err);
-                    });
-                }
-
-                video.play();
+            // 加载视频
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(videoSrc);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    enterFullScreen();
+                    video.play();
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = videoSrc;
+                video.addEventListener('loadedmetadata', () => {
+                    enterFullScreen();
+                    video.play();
+                });
             }
-
-            // 有些浏览器需要用户交互才能全屏和横屏
-            video.addEventListener('loadedmetadata', function () {
-                enterFullscreenAndLandscape();
-            });
-
-            // 如果浏览器限制，第一次点击视频也触发
-            video.addEventListener('click', enterFullscreenAndLandscape);
         });
     </script>
 </body>
