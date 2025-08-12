@@ -16,44 +16,69 @@
             width: 100%;
             height: 100%;
             background-color: black;
+            display: none; /* 初始隐藏视频 */
+        }
+        /* 遮罩层样式 */
+        #cover {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        #play-btn {
+            padding: 15px 30px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border-radius: 8px;
+            font-size: 18px;
+            border: 2px solid white;
         }
     </style>
 </head>
 <body>
-    <video id="video" controls playsinline webkit-playsinline muted></video>
+    <!-- 遮罩层 -->
+    <div id="cover">
+        <div id="play-btn">▶ 点击播放</div>
+    </div>
+
+    <!-- 视频 -->
+    <video id="video" controls playsinline webkit-playsinline></video>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const video = document.getElementById('video');
+            const cover = document.getElementById('cover');
+            const playBtn = document.getElementById('play-btn');
 
             // 从 URL 获取 vurl 参数（Base64 编码）
             const encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
             if (!encodedVideoSrc) return;
-
-            // Base64 解码
             const videoSrc = atob(decodeURIComponent(encodedVideoSrc));
+
+            // 这里设置封面背景图（可从 URL 参数传入）
+            const coverImg = new URLSearchParams(window.location.search).get('cover');
+            if (coverImg) {
+                cover.style.backgroundImage = `url(${decodeURIComponent(coverImg)})`;
+            }
 
             // 横屏锁定
             if (screen.orientation && screen.orientation.lock) {
                 screen.orientation.lock("landscape").catch(err => console.log("横屏失败:", err));
             }
 
-            // 全屏播放
-            const enterFullScreen = () => {
-                if (video.requestFullscreen) {
-                    video.requestFullscreen();
-                } else if (video.webkitRequestFullscreen) {
-                    video.webkitRequestFullscreen();
-                } else if (video.msRequestFullscreen) {
-                    video.msRequestFullscreen();
-                }
-            };
-
+            // 播放函数
             const startPlay = () => {
-                enterFullScreen();
-                video.play().catch(err => {
-                    console.log("自动播放失败，需要用户交互:", err);
-                });
+                cover.style.display = 'none'; // 隐藏封面
+                video.style.display = 'block';
+                video.muted = false;
+                video.play().catch(err => console.log("播放失败:", err));
             };
 
             // 加载视频
@@ -61,21 +86,19 @@
                 const hls = new Hls();
                 hls.loadSource(videoSrc);
                 hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    startPlay();
-                });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = videoSrc;
-                video.addEventListener('loadedmetadata', () => {
-                    startPlay();
-                });
             }
 
-            // 安卓端可能需要点击一次才能有声音播放
-            document.addEventListener('click', () => {
-                video.muted = false;
-                video.play();
-            }, { once: true });
+            // 点击封面播放
+            cover.addEventListener('click', () => {
+                startPlay();
+                if (video.requestFullscreen) {
+                    video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) {
+                    video.webkitRequestFullscreen();
+                }
+            });
         });
     </script>
 </body>
