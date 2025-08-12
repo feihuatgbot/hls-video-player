@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>感谢关注并使用 @feihuatgbot 欢迎转发分享！</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
@@ -11,20 +11,42 @@
             padding: 0;
             height: 100%;
             background-color: black;
+            overflow: hidden;
+        }
+        #video-container {
+            width: 100%;
+            height: 100%;
         }
         video {
             width: 100%;
             height: 100%;
             background-color: black;
         }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
-    <video id="video" controls playsinline webkit-playsinline muted></video>
-
+    <div id="video-container">
+        <video id="video" controls playsinline webkit-playsinline muted></video>
+    </div>
+    <div id="overlay">点击屏幕以播放声音</div>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const video = document.getElementById('video');
+            const overlay = document.getElementById('overlay');
 
             // 从 URL 获取 vurl 参数（Base64 编码）
             const encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
@@ -71,10 +93,13 @@
                 });
             }
 
-            // 安卓端可能需要点击一次才能有声音播放
+            // 用户点击屏幕后取消静音并播放
             document.addEventListener('click', () => {
                 video.muted = false;
-                video.play();
+                overlay.style.display = 'none';
+                video.play().catch(err => {
+                    console.log("播放失败:", err);
+                });
             }, { once: true });
         });
     </script>
