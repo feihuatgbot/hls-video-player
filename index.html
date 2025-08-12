@@ -11,46 +11,37 @@
             padding: 0;
             height: 100%;
             background-color: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
         video {
             width: 100%;
-            height: auto;
+            height: 100%;
             background-color: black;
-        }
-        #message {
-            color: white;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
         }
     </style>
 </head>
 <body>
     <video id="video" controls playsinline webkit-playsinline muted></video>
-    <div id="message" style="display: none;">请点击屏幕以启用声音</div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const video = document.getElementById('video');
-            const message = document.getElementById('message');
+
+            // 从 URL 获取 vurl 参数（Base64 编码）
             const encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
+            if (!encodedVideoSrc) return;
 
-            if (!encodedVideoSrc) {
-                message.textContent = "未提供视频源";
-                message.style.display = 'block';
-                return;
-            }
-
+            // Base64 解码
             const videoSrc = atob(decodeURIComponent(encodedVideoSrc));
 
+            // 横屏锁定
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock("landscape").catch(err => console.log("横屏失败:", err));
+            }
+
+            // 全屏播放
             const enterFullScreen = () => {
                 if (video.requestFullscreen) {
-                    video.requestFullscreen().catch(err => {
-                        console.log("全屏失败:", err);
-                    });
+                    video.requestFullscreen();
                 } else if (video.webkitRequestFullscreen) {
                     video.webkitRequestFullscreen();
                 } else if (video.msRequestFullscreen) {
@@ -62,10 +53,10 @@
                 enterFullScreen();
                 video.play().catch(err => {
                     console.log("自动播放失败，需要用户交互:", err);
-                    message.style.display = 'block';
                 });
             };
 
+            // 加载视频
             if (Hls.isSupported()) {
                 const hls = new Hls();
                 hls.loadSource(videoSrc);
@@ -78,15 +69,12 @@
                 video.addEventListener('loadedmetadata', () => {
                     startPlay();
                 });
-            } else {
-                message.textContent = "您的浏览器不支持HLS视频播放";
-                message.style.display = 'block';
             }
 
+            // 安卓端可能需要点击一次才能有声音播放
             document.addEventListener('click', () => {
                 video.muted = false;
                 video.play();
-                message.style.display = 'none';
             }, { once: true });
         });
     </script>
