@@ -22,7 +22,9 @@
         }
         video {
             width: 100%;
+            height: auto;
             background-color: black;
+            object-fit: contain; /* 让竖屏视频不被裁切 */
         }
         button {
             padding: 10px 20px;
@@ -37,7 +39,7 @@
 </head>
 <body>
     <div id="video-container">
-        <video id="video" controls></video>
+        <video id="video" playsinline webkit-playsinline controls></video>
         <button id="playButton">播放视频</button>
     </div>
 
@@ -47,9 +49,7 @@
             var playButton = document.getElementById('playButton');
             var encodedVideoSrc = new URLSearchParams(window.location.search).get('vurl');
 
-            if (!encodedVideoSrc) {
-                return;
-            }
+            if (!encodedVideoSrc) return;
 
             var videoSrc = atob(encodedVideoSrc);
 
@@ -57,17 +57,13 @@
                 var hls = new Hls();
                 hls.loadSource(videoSrc);
                 hls.attachMedia(video);
-
-                playButton.addEventListener('click', function() {
-                    video.play();
-                });
             } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                 video.src = videoSrc;
-
-                playButton.addEventListener('click', function() {
-                    video.play();
-                });
             }
+
+            playButton.addEventListener('click', function() {
+                video.play();
+            });
         });
     </script>
 </body>
